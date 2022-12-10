@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-import { Overlay } from './Modal.styled';
-import { ModalWindow } from './Modal.styled';
+import { Overlay, ModalWindow } from './Modal.styled';
 import PropTypes from 'prop-types';
 
 const Modal = ({ image, closeModal }) => {
