@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import Searchbar from './Searchbar';
 import fetchImages from 'services/pixabay-api';
 import ImageGallery from './ImageGallery';
@@ -9,140 +9,112 @@ import { Container } from './Section/Section.styled';
 import Notification from './Notification/Notification';
 import Loader from './Loader';
 
-export default class App extends Component {
-  state = {
-    query: '',
-    page: 1,
-    images: [],
-    totalImages: [],
-    status: 'idle',
-    currentImage: null,
-    isLoading: false,
-    error: '',
-  };
+const App = () => {
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [images, setImages] = useState([]);
+  const [totalImages, setTotalImages] = useState([]);
+  const [status, setStatus] = useState('idle');
+  const [currentImage, setCurrentImage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  componentDidUpdate(_, prevState) {
-    const { query, page } = this.state;
-
-    if (
-      (prevState.query !== query && query !== '') ||
-      (prevState.page !== page && query !== '')
-    ) {
-      this.getImages();
-    } else {
+  useEffect(() => {
+    if (query !== '') {
+      getImages();
     }
-  }
 
-  getImages = () => {
-    const { query, page } = this.state;
-    this.setState({ isLoading: true });
-    fetchImages(query, page, this.fetchError)
-      .then(({ data: { hits, totalHits } }) => {
-        if (hits.length !== 0) {
-          this.setState(prevState => ({
-            images: [...prevState.images, ...hits],
-            totalImages: totalHits,
-            status: 'resolved',
-            error: '',
-          }));
-        } else {
-          this.setState({ status: 'rejected' });
-        }
-      })
-      .catch(error => {
-        this.setState({
-          error: 'Something went wrong!',
+    function getImages() {
+      setIsLoading(true);
+      fetchImages(query, page)
+        .then(({ data: { hits, totalHits } }) => {
+          if (hits.length !== 0) {
+            setImages(prevState => [...prevState, ...hits]);
+            setTotalImages(totalHits);
+            setStatus('resolved');
+            setError('');
+          } else {
+            setStatus('rejected');
+          }
+        })
+        .catch(error => {
+          console.log(error.message);
+          setError('Something went wrong!');
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
-      })
-      .finally(() => {
-        this.setState({
-          isLoading: false,
-        });
-      });
-  };
-
-  handleFormSubmit = query => {
-    if (query.trim() !== '' && query !== this.state.query) {
-      this.setState({ status: 'idle', query, page: 1, images: [] });
     }
-    if (query.trim() === '') {
-      this.setState({
-        status: 'emptyQuery',
-        query: '',
-        images: [],
-        page: 1,
-        totalImages: 0,
-      });
+  }, [query, page]);
+
+  const handleFormSubmit = submitQuery => {
+    if (submitQuery.trim() !== '' && submitQuery !== query) {
+      setStatus('idle');
+      setQuery(submitQuery);
+      setPage(1);
+      setImages([]);
+    }
+    if (submitQuery.trim() === '') {
+      setStatus('emptyQuery');
+      setQuery('');
+      setImages([]);
+      setPage(1);
+      setTotalImages(0);
     }
   };
 
-  loadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const loadMore = () => {
+    setPage(page + 1);
   };
 
-  openModal = data => {
-    this.setState({ currentImage: data });
+  const openModal = data => {
+    setCurrentImage(data);
   };
 
-  closeModal = () => {
-    this.setState({ currentImage: null });
+  const closeModal = () => {
+    setCurrentImage(null);
   };
 
-  fetchError = message => {
-    this.setState({ error: message });
-  };
+  const maxPage = Math.ceil(totalImages / 12);
+  return (
+    <AppStyled>
+      <Searchbar onSubmit={handleFormSubmit} />
+      {status === 'resolved' && (
+        <>
+          <ImageGallery images={images} openModal={openModal} />
 
-  render() {
-    const {
-      images,
-      status,
-      currentImage,
-      isLoading,
-      error,
-      totalImages,
-      page,
-    } = this.state;
-    const maxPage = Math.ceil(totalImages / 12);
-    return (
-      <AppStyled>
-        <Searchbar onSubmit={this.handleFormSubmit} />
-        {status === 'resolved' && (
-          <>
-            <ImageGallery images={images} openModal={this.openModal} />
+          {isLoading ? (
+            <Loader />
+          ) : (
+            maxPage !== page && (
+              <Button text="Load more" clickHandler={loadMore} />
+            )
+          )}
 
-            {isLoading ? (
-              <Loader />
-            ) : (
-              maxPage !== page && (
-                <Button text="Load more" clickHandler={this.loadMore} />
-              )
-            )}
+          {currentImage && (
+            <Modal image={currentImage} closeModal={closeModal} />
+          )}
+        </>
+      )}
+      {status === 'rejected' && (
+        <Container>
+          <Notification
+            message={'There are no results that match your search!'}
+          />
+        </Container>
+      )}
+      {status === 'emptyQuery' && (
+        <Container>
+          <Notification message={'Please write something first!'} />
+        </Container>
+      )}
+      {error !== '' && (
+        <Container>
+          <Notification message={error} />
+        </Container>
+      )}
+    </AppStyled>
+  );
+};
 
-            {currentImage && (
-              <Modal image={currentImage} closeModal={this.closeModal} />
-            )}
-          </>
-        )}
-        {status === 'rejected' && (
-          <Container>
-            <Notification
-              message={'There are no results that match your search!'}
-            />
-          </Container>
-        )}
-        {status === 'emptyQuery' && (
-          <Container>
-            <Notification message={'Please write something first!'} />
-          </Container>
-        )}
-        {error !== '' && (
-          <Container>
-            <Notification message={error} />
-          </Container>
-        )}
-      </AppStyled>
-    );
-  }
-}
+export default App;
