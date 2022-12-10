@@ -1,5 +1,4 @@
-import { GalleryItem } from './ImageGalleryItem.styled';
-import { GalleryItemImage } from './ImageGalleryItem.styled';
+import { GalleryItem, GalleryItemImage } from './ImageGalleryItem.styled';
 import PropTypes from 'prop-types';
 
 const ImageGalleryItem = ({ images, openModal }) => {
