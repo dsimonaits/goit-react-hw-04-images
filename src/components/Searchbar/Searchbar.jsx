@@ -1,14 +1,22 @@
-import { useState } from 'react';
-import { Header } from './Searchbar.styled';
-import { SearchForm } from './Searchbar.styled';
-import { SearchBtn } from './Searchbar.styled';
-import { SearchBtnLabel } from './Searchbar.styled';
-import { SearchInput } from './Searchbar.styled';
-import { FiSearch } from 'react-icons/fi';
+import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
+import {
+  Header,
+  SearchForm,
+  SearchBtn,
+  SearchBtnLabel,
+  SearchInput,
+} from './Searchbar.styled';
+import { FiSearch } from 'react-icons/fi';
 
 const Searchbar = ({ onSubmit }) => {
+  const inputRef = useRef(null);
+
   const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    inputRef.current.focus();
+  }, []);
 
   const handleInputValue = e => {
     const value = e.currentTarget.value;
@@ -32,9 +40,10 @@ const Searchbar = ({ onSubmit }) => {
           type="text"
           value={query}
           autoComplete="off"
-          autoFocus
+          // autoFocus
           placeholder="Search images and photos"
           onChange={handleInputValue}
+          ref={inputRef}
         />
       </SearchForm>
     </Header>
